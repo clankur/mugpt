@@ -19,7 +19,7 @@ model:
   n_kv: 2
   d_head: 32
   layers: 2
-  vocab: 32000 
+  vocab: 32768 
   d_ff: 1024
   rope_max_timescale: 256
 
@@ -33,18 +33,10 @@ mesh:
   d: 4
   t: 2
 
-# flat_tokens:
-#   filespec: 'synthetic_dataset.zarr'
-#   streams: 2
-#   read_blocks_per_shuffle_buffer: 8
-#   sequences_per_read_block: 16
-#   seed: 0
-#   sequence_packing: true
-
-hf_dataset:
-  path: allenai/c4
-  name: en
-  num_workers: 0 
-  tokenizer: NousResearch/Nous-Hermes-llama-2-7b # may require huggingface-cli login
-  sequences_packed_per_batch: 16
+flat_tokens:
+  filespec: 'gcs://flat_tokens/20b'   # Fill in
+  streams: 1
+  read_blocks_per_shuffle_buffer: 128
+  sequences_per_read_block: 1024
   seed: 0
+  sequence_packing: true
