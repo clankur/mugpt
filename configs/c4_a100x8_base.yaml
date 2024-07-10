@@ -21,7 +21,7 @@ training:
   cosine_learning_rate_final_fraction: 0.1 
 
 flat_tokens:
-  filespec: 'gcs://flat_tokens/40b'   # Fill in
+  filespec: 'gcs://flat_tokens/20b'   # Fill in
   streams: 1
   read_blocks_per_shuffle_buffer: 128
   sequences_per_read_block: 1024
