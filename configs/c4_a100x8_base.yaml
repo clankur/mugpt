@@ -19,9 +19,10 @@ training:
   # Learning rate is not yet tuned.
   learning_rate: 3.e-4
   cosine_learning_rate_final_fraction: 0.1 
+  use_grad_clip: false
 
 flat_tokens:
-  filespec: 'gcs://flat_tokens/20b'   # Fill in
+  filespec: 'gcs://flat_tokens/40bv2'   # Fill in
   streams: 1
   read_blocks_per_shuffle_buffer: 128
   sequences_per_read_block: 1024
