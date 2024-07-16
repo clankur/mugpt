@@ -18,11 +18,11 @@ training:
 
   # Learning rate is not yet tuned.
   learning_rate: 3.e-4
-  cosine_learning_rate_final_fraction: 0.1 
-  use_grad_clip: false
+  cosine_learning_rate_final_fraction: 0.1
+  use_grad_clip: true
 
 flat_tokens:
-  filespec: 'gcs://flat_tokens/40bv2'   # Fill in
+  filespec: "gcs://flat_tokens/40bv2" # Fill in
   streams: 1
   read_blocks_per_shuffle_buffer: 128
   sequences_per_read_block: 1024
@@ -31,7 +31,7 @@ flat_tokens:
 
 paths:
   # root_working_dir can also be a path on a local filesystem
-  root_working_dir: 'seqax' 
+  root_working_dir: "seqax"
 
 num_hosts: 1
 
