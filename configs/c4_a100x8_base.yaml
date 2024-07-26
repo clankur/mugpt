@@ -22,7 +22,7 @@ training:
   use_grad_clip: true
 
 flat_tokens:
-  filespec: "gcs://flat_tokens/40bv2" # Fill in
+  filespec: "gcs://flat-tokens-sr/40bv2" # Fill in
   streams: 1
   read_blocks_per_shuffle_buffer: 128
   sequences_per_read_block: 1024
