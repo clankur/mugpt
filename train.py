@@ -111,7 +111,7 @@ class Model:
         # scale for tensors with d_model fan_in and truncated normal truncated to (-2, 2)
         d_model_scale = 1 / (math.sqrt(h.d_model) * truncated_normal_stddev)
 
-        w_k_scale = d_model_scale * h.a_attn * math.sqrt(base.d_head) / h.d_head
+        w_k_scale = d_model_scale * h.a_attn * math.sqrt(base.d_model) / h.d_model
         w_v_scale = d_model_scale
 
         total_head_dim = h.n_q_per_kv * h.n_kv * h.d_head
