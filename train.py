@@ -118,7 +118,6 @@ class Model:
         w_o_scale = 1 / (math.sqrt(total_head_dim) * truncated_normal_stddev)
         w_up_scale = d_model_scale
         w_down_scale = 1 / (math.sqrt(h.d_ff) * truncated_normal_stddev)
-        unembed_scale = h.a_output * math.sqrt(base.d_model) / h.d_model
 
         w_kv_shape = (h.layers, 2, h.d_model, h.n_kv, h.d_head)
         w_kv = jax.random.truncated_normal(
@@ -148,9 +147,11 @@ class Model:
             fold_in_str(rng, "w_down"), -2, 2, ff_shape, dtype=jnp.float32
         )
 
-        unembed = unembed_scale * jax.random.truncated_normal(
-            fold_in_str(rng, "unembed"), -2, 2, (h.vocab, h.d_model), dtype=jnp.float32
-        )
+        # unembed = unembed_scale * jax.random.truncated_normal(
+        #     fold_in_str(rng, "unembed"), -2, 2, (h.vocab, h.d_model), dtype=jnp.float32
+        # )
+
+        unembed = jnp.zeros((h.vocab, h.d_model), dtype=jnp.float32)
 
         arrays = Model(
             embed=embed,
@@ -281,7 +282,12 @@ class Model:
         x = shardops.all_gather("B/d L M/t -> B/d L M", x)
         ln = shardops.all_gather("M/t/d -> M", jnp.float32(self.final_layer_norm))
         x = jnp.bfloat16(rms_norm(x) * ln)
-        unembed = shardops.all_gather("V/t M/d -> V/t M", jnp.bfloat16(self.unembed))
+
+        unembed_scale = h.a_output * math.sqrt(h.base.d_model) / h.d_model
+        unembed = (
+            shardops.all_gather("V/t M/d -> V/t M", jnp.bfloat16(self.unembed))
+            * unembed_scale
+        )
         logits = shardops.einsum_unreduced(
             "B/d L M, V/t M -> B/d L V/t",
             x,
