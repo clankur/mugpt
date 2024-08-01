@@ -151,14 +151,20 @@ class Model:
 
     @typechecked
     def forward_pass(
-        self, h: Hparams, ids: u32[b"B/d L"], is_seq_start: bool_[b"B/d L"]
+        self,
+        h: Hparams,
+        ids: u32[b"B/d L"],
+        is_seq_start: bool_,
+        q_centers: u32[
+            b"layers n_kv/t 2 d_head"
+        ],  # [layers num_heads num_centers d_head]
     ) -> f32[b"B/d L V/t"]:
         ##### Initial embedding lookup.
         embed = shardops.all_gather("V/t M/d -> V/t M", jnp.bfloat16(self.embed))
         x = shardops.index_unreduced("[V/t] M, B/d L -> B/d L M", embed, ids)
         x = shardops.psum_scatter("B/d L M -> B/d L M/t", x)
 
-        L = ids.shape[1]
+        L = ids.shape[1]  # [layers 2 num_heads d_head]
         segment_ids = jnp.cumsum(is_seq_start, axis=1)
         segment_mask: bool_[b"B/d L L"] = (
             segment_ids[:, :, jnp.newaxis] == segment_ids[:, jnp.newaxis, :]
@@ -179,7 +185,7 @@ class Model:
         def loop_body(
             x: bf16[b"B/d L M/t"], layer_weights: Any
         ) -> Tuple[bf16[b"B/d L M/t"], Tuple[()]]:
-            w_q, w_kv, w_o, w_gate, w_up, w_down, ln1, ln2 = layer_weights
+            w_q, w_kv, w_o, w_gate, w_up, w_down, ln1, ln2, q_centers = layer_weights
 
             # Pre-attention RMSNorm
             ln1 = shardops.all_gather("M/t/d -> M", jnp.float32(ln1))
@@ -193,11 +199,21 @@ class Model:
                     "B/d L M, M Q K/t D -> B/d L Q K/t D", nx, w_q
                 )
             )
-            q = rope_table.apply("L D -> 1 L 1 1 D", q)
+            # d_model/d n_q_per_kv n_kv/t d_head
             w_kv = shardops.all_gather("2 M/d K/t D -> 2 M K/t D", jnp.bfloat16(w_kv))
             k, v = shardops.einsum_unreduced(
                 "B/d L M, k_v M K/t D -> k_v B/d L K/t D", nx, w_kv
             )
+            # adjust centers
+            cluster_alignment = shardops.einsum_unreduced(
+                "B/d Qlen Q K/t D, K/t num_centers D -> B/d Q K/t Qlen num_centers",
+                q,
+                q_centers,
+            )
+
+            max_indices = jnp.argmax(cluster_alignment, axis=-1)
+
+            q = rope_table.apply("L D -> 1 L 1 1 D", q)
             k = save_for_backward(k)
             v = save_for_backward(v)
             k = rope_table.apply("L d -> 1 L 1 d", k)
@@ -254,6 +270,7 @@ class Model:
                 self.w_down,
                 self.ln1,
                 self.ln2,
+                q_centers,
             ),
         )
 
