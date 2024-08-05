@@ -23,6 +23,16 @@ model:
   vocab: 32768 
   d_ff: 1024
   rope_max_timescale: 256
+  a_attn: 1
+  a_output: 1
+
+  base:
+    d_model: 256
+    n_q_per_kv: 2
+    n_kv: 2
+    d_head: 32
+    layers: 2
+    d_ff: 1024
 
 paths:
   root_working_dir: '/tmp'
