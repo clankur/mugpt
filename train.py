@@ -199,10 +199,10 @@ class Model:
                 "B/d L M, k_v M K/t D -> k_v B/d L K/t D", nx, w_kv
             )
 
-            k = k.at[:, :, 0, :].set(0)
             k = save_for_backward(k)
             v = save_for_backward(v)
             k = rope_table.apply("L d -> 1 L 1 d", k)
+
             logits = shardops.einsum_unreduced(
                 "B/d Qlen Q K/t D, B/d Klen K/t D -> B/d Qlen Klen Q K/t",
                 q,
@@ -210,7 +210,12 @@ class Model:
                 preferred_element_type=jnp.float32,
             )
             logits = jnp.where(causal_mask, logits, -1e10)
+            logits = jnp.pad(
+                logits, ((0, 0), (0, 0), (1, 0), (0, 0), (0, 0)), constant_values=0
+            )  # B/d Klen+1 K/t D
             probs = jnp.bfloat16(jax.nn.softmax(logits, axis=2))
+            probs = probs[:, :, 1:, :, :]  # B/d Qlen Klen Q K/t
+
             attn_out = shardops.einsum_unreduced(
                 "B/d Qlen Klen Q K/t, B/d Klen K/t D -> B/d Qlen Q K/t D", probs, v
             )
