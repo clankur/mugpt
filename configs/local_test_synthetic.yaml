@@ -45,7 +45,7 @@ mesh:
   t: 2
 
 flat_tokens:
-  filespec: 'gcs://flat_tokens/20b'   # Fill in
+  filespec: 'gs://flat-tokens-sr/40bv2'   # Fill in
   streams: 1
   read_blocks_per_shuffle_buffer: 128
   sequences_per_read_block: 1024
