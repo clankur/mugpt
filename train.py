@@ -210,7 +210,7 @@ class Model:
                 preferred_element_type=jnp.float32,
             )
             logits = jnp.where(causal_mask, logits, -1e10)
-            logits = logits.at[:, :, :0, :, :].set(0)  # zero out BOS for key token
+            logits = logits.at[:, :, 0, :, :].set(0)  # zero out BOS for key token
 
             probs = jnp.bfloat16(jax.nn.softmax(logits, axis=2))
 
