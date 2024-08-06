@@ -210,11 +210,9 @@ class Model:
                 preferred_element_type=jnp.float32,
             )
             logits = jnp.where(causal_mask, logits, -1e10)
-            logits = jnp.pad(
-                logits, ((0, 0), (0, 0), (1, 0), (0, 0), (0, 0)), constant_values=0
-            )  # B/d Klen+1 K/t D
+            logits = logits.at[:, :, :0, :, :].set(0)  # zero out BOS for key token
+
             probs = jnp.bfloat16(jax.nn.softmax(logits, axis=2))
-            probs = probs[:, :, 1:, :, :]  # B/d Qlen Klen Q K/t
 
             attn_out = shardops.einsum_unreduced(
                 "B/d Qlen Klen Q K/t, B/d Klen K/t D -> B/d Qlen Q K/t D", probs, v
